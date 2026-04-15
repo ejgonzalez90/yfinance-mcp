@@ -1,0 +1,75 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // ── Build ───────────────────────────────────────────────────────────────
+    {
+      "label": "Build: production image",
+      "type": "shell",
+      "command": "docker build --target runtime -t yfinance-mcp:latest .",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "build"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build: dev image",
+      "type": "shell",
+      "command": "docker build --target dev -t yfinance-mcp:dev .",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "build"
+      },
+      "problemMatcher": []
+    },
+    // ── Run ─────────────────────────────────────────────────────────────────
+    {
+      "label": "Run: production",
+      "type": "shell",
+      "command": "docker run -i --rm -p 7576:7576 yfinance-mcp:latest",
+      "dependsOn": "Build: production image",
+      "dependsOrder": "sequence",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "run"
+      },
+      "problemMatcher": []
+    },
+    // ── Dev / Hot Reload ─────────────────────────────────────────────────────
+    // Rebuilds the dev image (picks up package.json changes), then starts the
+    // container with src/ volume-mounted. tsx watch restarts the process on
+    // every .ts save — no image rebuild needed for source changes.
+    {
+      "label": "Dev: hot reload",
+      "dependsOn": "Build: dev image",
+      "dependsOrder": "sequence",
+      "type": "shell",
+      "command": "docker run -i --rm -p 7576:7576 -v \"${workspaceFolder}/src:/app/src\" yfinance-mcp:dev",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "run"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
