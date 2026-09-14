@@ -1,0 +1,10 @@
+services:
+  yfinance-mcp:
+    build: .
+    image: yfinance-mcp:latest
+    container_name: yfinance-mcp
+    restart: unless-stopped
+    ports:
+      - "7576:7576"
+    environment:
+      - NODE_ENV=production
