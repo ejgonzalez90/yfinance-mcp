@@ -2,8 +2,7 @@
  * Minimal Yahoo Finance HTTP client.
  *
  * Yahoo Finance requires a crumb token (+ session cookies) for most API calls.
- * This client handles crumb acquisition and refresh automatically, mirroring
- * how ppi-client.ts manages PPI bearer tokens.
+ * This client acquires and refreshes the crumb automatically.
  */
 
 const YF_QUERY_HOST1 = "query1.finance.yahoo.com";

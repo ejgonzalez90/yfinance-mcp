@@ -2,6 +2,15 @@
   "name": "yfinance-mcp",
   "version": "1.0.0",
   "description": "MCP server exposing Yahoo Finance market data (yfinance-compatible)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ejgonzalez90/yfinance-mcp.git"
+  },
+  "homepage": "https://github.com/ejgonzalez90/yfinance-mcp",
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "bin": {
     "yfinance-mcp": "./dist/index.js"
