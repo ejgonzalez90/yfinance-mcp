@@ -1,69 +1,138 @@
 # yfinance-mcp
 
-MCP server exposing Yahoo Finance market data — no API key required. Provides 17 tools for real-time quotes, historical prices, options chains, company fundamentals, financial statements, analyst recommendations, ESG scores, news, and stock screeners.
+A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that gives AI agents access to Yahoo Finance market data: real-time quotes, price history, options chains, company fundamentals, financial statements, analyst recommendations, ESG scores, news and predefined stock screeners. No API key is required.
 
-**Transport:** Streamable HTTP — listens on `http://0.0.0.0:7576/mcp`.
+It is read-only: the server only fetches public market data and has no trading or account functionality.
+
+> **Disclaimer.** This project is unofficial and is not affiliated with, endorsed by, or sponsored by Yahoo or Yahoo Finance. It calls Yahoo's unofficial, undocumented web endpoints, which can change or stop working at any time. Data is provided for informational purposes only and is not investment advice. Your use of Yahoo Finance data is subject to Yahoo's terms of service; you are responsible for complying with them.
+
+## How it works
+
+- **Transport:** Streamable HTTP, listening on `http://0.0.0.0:7576/mcp` (override the port with `PORT`).
+- **Yahoo access:** a small built-in client (`src/yf-client.ts`) obtains the cookie and crumb Yahoo requires, attaches them to requests, and refreshes them once if Yahoo rejects them.
+- **Sessions:** every MCP `initialize` request gets its own server and transport, so clients can reconnect freely.
+- **Output:** tools return Yahoo's JSON, pretty-printed as text. A few tools trim the payload (`yf_news` returns only the news array, `yf_dividends_and_splits` only the `events` object).
+- Several tools accept a region code (for example `AR`, `BR`, `GB`), so Yahoo's non-US markets can be queried. The server adds no special handling beyond passing the code through.
+
+There is no authentication on the HTTP endpoint. Run it on localhost or a trusted network, not exposed to the internet.
 
 ## Quick start
 
-### Build and run
+### Docker (prebuilt image)
 
 ```bash
-# Production
-docker build --target runtime -t yfinance-mcp:latest .
-docker run -i --rm -p 7576:7576 yfinance-mcp:latest
-
-# Development (hot reload)
-docker build --target dev -t yfinance-mcp:dev .
-docker run -i --rm -p 7576:7576 -v "$(pwd)/src:/app/src" yfinance-mcp:dev
+docker run -d --name yfinance-mcp --restart unless-stopped -p 7576:7576 ghcr.io/ejgonzalez90/yfinance-mcp:latest
 ```
 
-Or via VS Code tasks: **yfinance-mcp: Run: production** / **yfinance-mcp: Dev: hot reload**.
+To keep it reachable only from your machine, publish the port as `127.0.0.1:7576:7576`.
 
-### Connect from an MCP client
+### Docker Compose (build locally)
 
-Point the client at `http://localhost:7576/mcp`.
+```bash
+git clone https://github.com/ejgonzalez90/yfinance-mcp.git
+cd yfinance-mcp
+docker compose up -d --build
+```
 
-No credentials needed — Yahoo Finance data is publicly accessible.
+The container restarts automatically (`unless-stopped`) and serves on port 7576. No environment file is needed.
 
-## Environment variables
+### Node.js
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PORT` | No | Override listen port (default: `7576`) |
-| `NODE_ENV` | No | Set to `production` to disable the `/debug` endpoint |
+Requires Node.js 22 or newer (the Docker image uses Node 24).
 
-## Debug endpoint
+```bash
+npm ci
+npm run dev                  # run from source with tsx
+# or
+npm run build && npm start   # compiled
+```
 
-In development, `GET http://localhost:7576/debug` returns server health and active session count.
+## Connect a client
+
+### Claude Code
+
+```bash
+claude mcp add --transport http yfinance-mcp http://localhost:7576/mcp
+```
+
+### Other MCP clients
+
+Any client that supports Streamable HTTP can use the endpoint URL. For clients configured through JSON, an entry like this is typical (the exact key names vary by client):
+
+```json
+{
+  "mcpServers": {
+    "yfinance-mcp": {
+      "type": "http",
+      "url": "http://localhost:7576/mcp"
+    }
+  }
+}
+```
 
 ## Tools
 
+17 tools, all prefixed `yf_`.
+
 ### Market data
+
 | Tool | Description |
 |------|-------------|
-| `yf_quote` | Real-time quote(s): price, change %, volume, market cap, PE, bid/ask, 52-week range |
-| `yf_historical` | Historical OHLCV data — supports range shorthands (`1d`, `1mo`, `1y`, `max`) and explicit date ranges |
-| `yf_options` | Options chain (calls & puts) for a symbol; omit expiry to list available dates |
-| `yf_trending` | Currently trending tickers for a region (default: US) |
-| `yf_market_summary` | Snapshot of major indices (S&P 500, Nasdaq, Dow, etc.) |
+| `yf_quote` | Real-time quote data for one or more tickers: price, change %, volume, market cap, PE ratio, 52-week range, bid/ask |
+| `yf_historical` | Historical OHLCV data. `period1` is either an ISO date or a range shorthand (`1d`, `5d`, `1mo`, `3mo`, `6mo`, `1y`, `2y`, `5y`, `10y`, `ytd`, `max`); intervals from `1m` to `3mo`; optional pre/post-market data |
+| `yf_options` | Options chain (calls and puts). Without `expirationDate`, returns the available expirations |
+| `yf_trending` | Currently trending tickers for a region (default `US`) |
+| `yf_market_summary` | Snapshot of major market indices and benchmarks for a region |
 
 ### Fundamentals
-| Tool | Description |
-|------|-------------|
-| `yf_info` | Full company/fund profile: sector, industry, description, market cap, PE, EPS, beta, dividend yield |
-| `yf_financials` | Financial statements — income, balance sheet, cash flow (annual and/or quarterly) |
-| `yf_holders` | Institutional holders, insider holdings, insider transactions, major holders breakdown |
-| `yf_dividends_and_splits` | Full dividend and stock split history |
-| `yf_analyst_recommendations` | Analyst buy/hold/sell trends, upgrade/downgrade history, earnings estimates |
-| `yf_esg` | ESG (Environmental, Social, Governance) sustainability scores |
-| `yf_fund_holdings` | Fund profile and top holdings for ETFs / mutual funds (e.g. SPY, QQQ) |
-| `yf_quote_summary` | Low-level access to any `quoteSummary` v10 module |
 
-### Search & discovery
 | Tool | Description |
 |------|-------------|
-| `yf_search` | Search for symbols, ETFs, indices, or crypto by name or keyword |
-| `yf_news` | Latest news headlines for a ticker or topic |
-| `yf_recommendations` | Similar/related tickers suggested by Yahoo Finance |
-| `yf_screener` | Run predefined screeners: `day_gainers`, `day_losers`, `most_actives`, `undervalued_growth_stocks`, etc. |
+| `yf_info` | Company or fund profile and key statistics: sector, industry, market cap, PE, EPS, dividend yield, beta, 52-week range |
+| `yf_financials` | Income statement, balance sheet and cash flow, annual and/or quarterly |
+| `yf_holders` | Institutional holders, insider holders and transactions, major holders breakdown, net share purchase activity |
+| `yf_dividends_and_splits` | Dividend and stock split history (defaults to since 2000-01-01) |
+| `yf_analyst_recommendations` | Analyst buy/hold/sell trends, upgrade/downgrade history, earnings estimates and history |
+| `yf_esg` | ESG sustainability scores |
+| `yf_fund_holdings` | Fund profile and top holdings for ETFs and mutual funds |
+| `yf_quote_summary` | Low-level access to any of the Yahoo `quoteSummary` v10 modules (29 modules, e.g. `assetProfile`, `earningsTrend`, `topHoldings`) |
+
+### Search and discovery
+
+| Tool | Description |
+|------|-------------|
+| `yf_search` | Search symbols, ETFs, funds, indices or crypto by name or keyword; also returns related news |
+| `yf_news` | Latest news for a ticker or topic |
+| `yf_recommendations` | Tickers Yahoo considers similar to a given symbol |
+| `yf_screener` | Run a predefined Yahoo screener, e.g. `day_gainers`, `day_losers`, `most_actives`, `undervalued_growth_stocks`, `growth_technology_stocks`, `aggressive_small_caps`, `small_cap_gainers` |
+
+## Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `7576` | Listen port |
+| `NODE_ENV` | unset | Anything other than `production` enables `GET /debug`, which returns uptime and the active session count. The Docker image sets `production`. |
+
+## Development
+
+```bash
+npm ci
+npm run dev           # tsx, run from source
+npm run build         # tsc -> dist/
+npm test              # vitest; the Yahoo client is mocked, no network needed
+npm run prettier:fix  # format src/
+```
+
+Docker targets: `dev` (mount `src/` and hot-reload with `tsx watch`), `builder`, and `runtime` (production image).
+
+```bash
+docker build --target runtime -t yfinance-mcp:latest .
+docker build --target dev -t yfinance-mcp:dev .
+docker run --rm -p 7576:7576 -v "$(pwd)/src:/app/src" yfinance-mcp:dev
+```
+
+Tool implementations live in `src/tools/`; see [CLAUDE.md](CLAUDE.md) for the code layout and how to add a tool.
+
+## License
+
+[MIT](LICENSE)

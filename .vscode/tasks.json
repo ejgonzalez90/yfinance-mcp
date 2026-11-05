@@ -70,6 +70,26 @@
         "group": "run"
       },
       "problemMatcher": []
+    },
+    // ── Test / Compose ───────────────────────────────────────────────────────
+    {
+      "label": "Test: vitest",
+      "type": "shell",
+      "command": "npm test",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Compose: up (detached)",
+      "type": "shell",
+      "command": "docker compose up -d --build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
     }
   ]
 }
