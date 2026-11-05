@@ -92,6 +92,7 @@ export async function yfGet(
   path: string,
   params: QueryParams = {},
   host = YF_QUERY_HOST1,
+  isRetry = false,
 ): Promise<unknown> {
   const { crumb: c, cookie } = await ensureCrumb();
 
@@ -111,12 +112,12 @@ export async function yfGet(
     },
   });
 
-  if (res.status === 401 || res.status === 403) {
+  if ((res.status === 401 || res.status === 403) && !isRetry) {
     // Crumb expired — invalidate and retry once.
     log("Auth error, refreshing crumb…");
     crumb = null;
     cookieString = null;
-    return yfGet(path, params, host);
+    return yfGet(path, params, host, true);
   }
 
   if (!res.ok) {
@@ -132,4 +133,10 @@ export async function yfChart(
   params: QueryParams = {},
 ): Promise<unknown> {
   return yfGet(`/v8/finance/chart/${encodeURIComponent(symbol)}`, params);
+}
+
+/** Clears the cached crumb/cookies (used by tests). */
+export function resetSession(): void {
+  crumb = null;
+  cookieString = null;
 }

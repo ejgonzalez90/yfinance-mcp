@@ -19,7 +19,9 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "prettier:fix": "prettier --write \"src/**/*.ts\""
+    "prettier:fix": "prettier --write \"src/**/*.ts\"",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.0",
@@ -29,6 +31,7 @@
     "@types/node": "^22.0.0",
     "prettier": "^3.8.2",
     "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^5.1.0"
   }
 }
