@@ -21,10 +21,10 @@ There is no authentication on the HTTP endpoint. Run it on localhost or a truste
 ### Docker (prebuilt image)
 
 ```bash
-docker run -d --name yfinance-mcp --restart unless-stopped -p 7576:7576 ghcr.io/ejgonzalez90/yfinance-mcp:latest
+docker run -d --name yfinance-mcp --restart unless-stopped -p 127.0.0.1:7576:7576 ghcr.io/ejgonzalez90/yfinance-mcp:latest
 ```
 
-To keep it reachable only from your machine, publish the port as `127.0.0.1:7576:7576`.
+The examples publish the port on `127.0.0.1` only, because the server has no authentication of its own; drop the `127.0.0.1:` prefix only if you put it behind something that does.
 
 ### Docker Compose (build locally)
 
@@ -128,7 +128,7 @@ Docker targets: `dev` (mount `src/` and hot-reload with `tsx watch`), `builder`,
 ```bash
 docker build --target runtime -t yfinance-mcp:latest .
 docker build --target dev -t yfinance-mcp:dev .
-docker run --rm -p 7576:7576 -v "$(pwd)/src:/app/src" yfinance-mcp:dev
+docker run --rm -p 127.0.0.1:7576:7576 -v "$(pwd)/src:/app/src" yfinance-mcp:dev
 ```
 
 Tool implementations live in `src/tools/`; see [CLAUDE.md](CLAUDE.md) for the code layout and how to add a tool.

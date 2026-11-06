@@ -38,7 +38,7 @@
     {
       "label": "Run: production",
       "type": "shell",
-      "command": "docker run -i --rm -p 7576:7576 yfinance-mcp:latest",
+      "command": "docker run -i --rm -p 127.0.0.1:7576:7576 yfinance-mcp:latest",
       "dependsOn": "Build: production image",
       "dependsOrder": "sequence",
       "options": {
@@ -60,7 +60,7 @@
       "dependsOn": "Build: dev image",
       "dependsOrder": "sequence",
       "type": "shell",
-      "command": "docker run -i --rm -p 7576:7576 -v \"${workspaceFolder}/src:/app/src\" yfinance-mcp:dev",
+      "command": "docker run -i --rm -p 127.0.0.1:7576:7576 -v \"${workspaceFolder}/src:/app/src\" yfinance-mcp:dev",
       "options": {
         "cwd": "${workspaceFolder}"
       },
